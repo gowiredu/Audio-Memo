@@ -6,8 +6,10 @@ import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.Environment;
 import android.os.Vibrator;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -15,6 +17,7 @@ import android.view.Window;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -31,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageButton roundButton;
     private long tempFileName; // temporary file name
     private String tempString; // temporary string to store name of touched file (to look up for playback or deletion).
+    private String tempTextfield;
 
     //private Button start, stop, format;
     private MediaRecorder recorder = null;
@@ -160,6 +164,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+        /*
         ResultsListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
@@ -168,6 +173,19 @@ public class MainActivity extends AppCompatActivity {
 
                 tempString = textToDelete; // make tempString (global variable) the name of the longpressed recording
                 deleteAudioDialog(); // shows
+                return true;
+            }
+        });*/
+
+        ResultsListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                final String recordingToRename = String.valueOf(parent.getItemAtPosition(position));
+                Toast.makeText(MainActivity.this, recordingToRename, Toast.LENGTH_LONG).show(); // "Toast" to confirm that the right file is about to be searched for.
+
+                tempString = recordingToRename; // make tempString (global variable) the name of the longpressed recording
+                renameRecordingDialog(); // shows a dialog box asking if the user would like to rename the recording.
+
                 return true;
             }
         });
@@ -199,28 +217,114 @@ public class MainActivity extends AppCompatActivity {
         */
     }
 
+    private void renameRecordingDialog()
+    {
+        // create a dialog box asking the user if they would like to rename the recording.
+        android.app.AlertDialog.Builder sendReportBox = new android.app.AlertDialog.Builder(MainActivity.this);
+        sendReportBox.setTitle("Rename Memo");
+        sendReportBox.setMessage("Would you like to rename this memo?");
+        sendReportBox.setCancelable(true);
+
+        sendReportBox.setPositiveButton(
+                "Yes",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        Toast.makeText(MainActivity.this, "Rename selected", Toast.LENGTH_LONG).show();
+                        dialog.cancel();
+                        renameRecordingDialogTextField();
+                    }
+                });
+
+        sendReportBox.setNegativeButton(
+                "No",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        Toast.makeText(MainActivity.this, "Cancel selected", Toast.LENGTH_LONG).show();
+                        dialog.cancel();
+                    }
+                });
+
+        android.app.AlertDialog dialogReportBox = sendReportBox.create();
+        dialogReportBox.show();
+    }
 
 
+
+
+
+    // dialog box with TextField to take new name of file.
+    private void renameRecordingDialogTextField()
+    {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Title");
+
+        // Set up the input
+        final EditText input = new EditText(this);
+
+        builder.setView(input);
+
+        // Set up the buttons
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                tempTextfield = input.getText().toString();
+                renameRecording();
+            }
+        });
+
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
+    }
+
+
+    // searches for the file to be renamed in the folder and renames it
+    private void renameRecording()
+    {
+        // save name of file in temporary string (taken care of with global variable "tempString"
+        // go through the folder looking for a file that matches temporary string
+        String renameRecordingFilePath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "MediaRecorderSample";
+
+        Log.d("Files", "Path: " + renameRecordingFilePath);
+
+        File f = new File(renameRecordingFilePath);
+        File file[] = f.listFiles();
+        Log.d("Files", "Size: " + file.length); // Log for current number of files in the folder
+        File to = new File(renameRecordingFilePath, tempTextfield + fileExtension[curFormat]);
+
+        for (int i = 0; i < file.length; i++) {
+            if (file[i].getName().equals(tempString)) {
+                //renameTo goes here.
+                boolean renamed = file[i].renameTo(to);
+                // refresh "lines" at "i"
+                lines.set(i, tempTextfield + fileExtension[curFormat]);
+                // refresh listView now (reflect changes on the screen)
+                refreshListView();
+            }
+        }
+
+
+        // if a match is found, rename the file
+    }
 
 
     // starts the recording
     private void startRecording()
     {
-        Log.i("STARTRECORDING() ", "startRecording() called");
         Toast.makeText(this, "Recording...", Toast.LENGTH_SHORT).show(); // works
         recorder = new MediaRecorder();
-        Log.i("NEWMEDIARECORDER", "new MediaRecorder check");
         recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        Log.i("AUDIOSOURCE_SET", "Audio source check");
         recorder.setOutputFormat(opformats[curFormat]);
-        Log.i("AUDIOFORMAT_SET", "Audio format check");
         recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-        Log.i("AUDIOENCODER_SET", "Audio encoder check");
         recorder.setOutputFile(getFilePath());
 
         try {
             recorder.prepare();
-            Log.i("RECORDING_PREPARE", "Recorder prepared");
             recorder.start();
             Log.i("RECORDING", "Recording started");
 
@@ -246,7 +350,8 @@ public class MainActivity extends AppCompatActivity {
             recorder = null;
 
             Log.i("MICROPHONE", "Recording stopped");
-            //listDirectoryFiles();
+            listDirectoryFiles();
+
 
         }
 
