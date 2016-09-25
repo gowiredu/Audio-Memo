@@ -23,11 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-// MAKE RECORD BUTTON DISAPPEAR ONSCROLL
-// LONGPRESS TO DELETE
-// MORE SPACING BETWEEN RECORDINGS
-// FORMAT BUTTON IN SETTINGS PAGE
-// FIGURE OUT RENAMING AUDIO FILES
 
 public class MainActivity extends AppCompatActivity {
 
