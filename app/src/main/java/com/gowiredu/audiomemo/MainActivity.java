@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ArrayList<String> lines = new ArrayList<>(); // temporarily store names of files in directory
     private ListView ResultsListView;
+    private ImageButton roundButton;
     private long tempFileName; // temporary file name
     private String tempString; // temporary string to store name of touched file (to look up for playback or deletion).
 
@@ -50,11 +51,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getWindow().requestFeature(Window.FEATURE_ACTION_BAR_OVERLAY); // for ActionBar disappear on scroll
+        createFolderIfNoFolder(); // creates a folder for recordings if there is no folder yet (like the first time the app is launched after download).
+        //getWindow().requestFeature(Window.FEATURE_ACTION_BAR_OVERLAY); // for ActionBar disappear on scroll
         setContentView(R.layout.activity_main);
 
         ResultsListView = (ListView) findViewById(R.id.ResultsListView);
-        ImageButton roundButton = (ImageButton) findViewById(R.id.fab_button);
+        roundButton = (ImageButton) findViewById(R.id.fab_button);
 
         /*
         start = (Button) findViewById(R.id.startbtn);
@@ -113,7 +115,8 @@ public class MainActivity extends AppCompatActivity {
                 Vibrator vb = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
                 try {
-                    if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    if (event.getAction() == MotionEvent.ACTION_DOWN)
+                    {
 
                         vb.vibrate(50); // vibrate when record button is touched
                         startRecording();
@@ -208,15 +211,21 @@ public class MainActivity extends AppCompatActivity {
     // starts the recording
     private void startRecording()
     {
-        Toast.makeText(this, "Recording...", Toast.LENGTH_SHORT).show();
+        Log.i("STARTRECORDING() ", "startRecording() called");
+        Toast.makeText(this, "Recording...", Toast.LENGTH_SHORT).show(); // works
         recorder = new MediaRecorder();
+        Log.i("NEWMEDIARECORDER", "new MediaRecorder check");
         recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+        Log.i("AUDIOSOURCE_SET", "Audio source check");
         recorder.setOutputFormat(opformats[curFormat]);
+        Log.i("AUDIOFORMAT_SET", "Audio format check");
         recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+        Log.i("AUDIOENCODER_SET", "Audio encoder check");
         recorder.setOutputFile(getFilePath());
 
         try {
             recorder.prepare();
+            Log.i("RECORDING_PREPARE", "Recorder prepared");
             recorder.start();
             Log.i("RECORDING", "Recording started");
 
@@ -242,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
             recorder = null;
 
             Log.i("MICROPHONE", "Recording stopped");
-            listDirectoryFiles();
+            //listDirectoryFiles();
 
         }
 
@@ -310,8 +319,9 @@ public class MainActivity extends AppCompatActivity {
     private String getFilePath()
     {
         tempFileName = System.currentTimeMillis();
-        String filePath = Environment.getExternalStorageDirectory().getPath();
+        String filePath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator;
         File folder = new File(filePath, "MediaRecorderSample"); // create folder for files
+        Log.i("FILEPATH_SET", folder.toString());
 
         // if "MediaRecorderSample" folder does not exist, create one...
         if (!folder.exists())
@@ -328,31 +338,54 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+    private void createFolderIfNoFolder()
+    {
+        if(!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED))
+        {
+            Log.d("SDCARD: ", "No SDCARD");
+        }
+        else
+        {
+            File folderFirstTime = new File(Environment.getExternalStorageDirectory() + File.separator + "MediaRecorderSample");
+            folderFirstTime.mkdirs();
+            Log.d("Folder", "Folder Created");
+            Log.d("Folder Directory", Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "MediaRecorderSample");
+        }
+    }
 
     // executed at the start of the app. Lists audio files in the app's folder.
     private void listDirectoryFilesStart()
     {
-        String filePath = Environment.getExternalStorageDirectory().getPath() + "/MediaRecorderSample";
-        Log.d("Files", "Path: " + filePath);
 
-        File f = new File(filePath);
-        File file[] = f.listFiles();
-        Log.d("Files", "Size: "+ file.length); // current number of files in the folder
-
-        for (int i = 0; i < file.length; i++)
-        {
-            Log.d("Files", "FileName:" + file[i].getName());
-            lines.add(file[i].getName());
-        }
-        Log.i("ARRAYLIST", lines.toString());
-
-        // populate the ListView now
         try {
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, lines);
-            ResultsListView.setAdapter(adapter);
+            String filePath = Environment.getExternalStorageDirectory().getPath() + File.separator + "MediaRecorderSample"; // create a folder in directory called "MediaRecorderSample"
+            Log.d("Files", "Path: " + filePath); // put file path in Log (to be sure of file path)
 
-            // refresh the listView
-            refreshListView();
+
+            File f = new File(filePath);
+
+            File file[] = f.listFiles(); // array of files
+            Log.d("Files", "Size: " + file.length); // current number of files in the folder
+
+            // add list of file names to ArrayList called "lines"
+            for (int i = 0; i < file.length; i++)
+            {
+                Log.d("Files", "FileName:" + file[i].getName());
+                lines.add(file[i].getName());
+            }
+            Log.i("ARRAYLIST", lines.toString()); // print ArrayList "lines" into the Log, just to be sure everything loaded into ArrayList
+
+            // populate the ListView now (with contents of ArrayList "lines")
+            try {
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, lines);
+                ResultsListView.setAdapter(adapter);
+
+                // refresh the listView
+                refreshListView();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
