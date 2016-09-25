@@ -4,16 +4,23 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
+import android.os.Build;
 import android.os.Environment;
 import android.os.Vibrator;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.FloatingActionButton;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.RecyclerView;
 import android.text.InputType;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
+import android.view.animation.OvershootInterpolator;
+import android.view.animation.ScaleAnimation;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -44,9 +51,6 @@ public class MainActivity extends AppCompatActivity {
     private int curFormat = 0;
 
 
-
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,6 +60,15 @@ public class MainActivity extends AppCompatActivity {
 
         ResultsListView = (ListView) findViewById(R.id.ResultsListView);
         roundButton = (ImageButton) findViewById(R.id.fab_button);
+
+        // animate record button on startup (pops up from nothingness)
+        ScaleAnimation anim = new ScaleAnimation(0,1,0,1,50,50); // 50, 50 is so it animates from the center outward.
+        anim.setFillBefore(true);
+        anim.setFillAfter(true);
+        anim.setFillEnabled(true);
+        anim.setDuration(500);
+        anim.setInterpolator(new OvershootInterpolator());
+        roundButton.startAnimation(anim);
 
         /*
         start = (Button) findViewById(R.id.startbtn);
@@ -215,6 +228,31 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         */
+
+        ResultsListView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+
+
+            }
+
+            @Override
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+
+                int lastItem = firstVisibleItem + visibleItemCount;
+
+                if (lastItem == totalItemCount)
+                {
+                    roundButton.setVisibility(View.INVISIBLE);
+                }
+
+                else
+                {
+                    roundButton.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+
     }
 
     private void renameRecordingDialog()
